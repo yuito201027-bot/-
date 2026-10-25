@@ -1,0 +1,218 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>人間競馬 | 文化祭カジノ</title>
+<style>
+:root{color-scheme:dark;--gold:#f5c45e;--bg:#101116;--panel:#1b1d25;--muted:#a9adbb}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:#fff;font-family:system-ui,sans-serif}
+header{text-align:center;padding:25px 14px;background:linear-gradient(140deg,#291d0d,#161720);border-bottom:1px solid #59482a}
+header small{color:var(--gold);letter-spacing:3px}
+h1{margin:8px 0;font-size:30px}
+main{max-width:760px;margin:auto;padding:16px}
+.card{background:var(--panel);border:1px solid #343744;border-radius:16px;padding:16px;margin-bottom:16px}
+h2{font-size:19px;margin:0 0 12px}
+p{line-height:1.7}
+.muted{color:var(--muted);font-size:14px}
+.runners{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.runner{background:#272a34;border:2px solid transparent;border-radius:12px;padding:12px;text-align:center;cursor:pointer}
+.runner.selected{border-color:var(--gold);background:#3b3020}
+.runner img{width:100%;height:120px;object-fit:cover;border-radius:8px;background:#383b46}
+.number{display:inline-grid;place-items:center;width:27px;height:27px;border-radius:50%;background:var(--gold);color:#211800;font-weight:800;margin:8px}
+input,select,button{font:inherit}
+input,select{width:100%;padding:11px;margin:6px 0 12px;border-radius:9px;border:1px solid #484c59;background:#11131a;color:white}
+button{border:0;border-radius:10px;padding:12px 15px;cursor:pointer;font-weight:700}
+.primary{width:100%;background:var(--gold);color:#211800}
+.secondary{background:#343744;color:white}
+button:disabled{opacity:.4;cursor:not-allowed}
+.picks{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hidden{display:none!important}
+.result{font-size:18px;font-weight:700;color:var(--gold)}
+video{width:100%;border-radius:12px;background:#000}
+.admin-row{border-bottom:1px solid #393c48;padding:10px 0}
+footer{text-align:center;padding:20px;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <small>CULTURAL FESTIVAL CASINO</small>
+  <h1>🏇 人間競馬</h1>
+  <div>予想を当てて、スタートチップを増やそう！</div>
+</header>
+<main>
+  <section class="card" id="intro">
+    <h2>🎯 ゲームの遊び方</h2>
+    <p>① 単勝で1着を予想しよう。<br>
+    ② 三連単で1〜3着を順番どおりに予想しよう。<br>
+    ③ レースを観戦して結果を確認！</p>
+    <p class="muted">基本チップは50枚。予想が外れても50枚は保証されます。</p>
+  </section>
+
+  <section class="card" id="prediction">
+    <h2>① 出走者を選ぼう</h2>
+    <div class="runners" id="runners"></div>
+
+    <h2 style="margin-top:22px">② 単勝予想（1着）</h2>
+    <select id="winPick"><option value="">1着になる人を選択</option></select>
+
+    <h2>③ 三連単予想（1〜3着）</h2>
+    <div class="picks">
+      <label>1着<select id="first"><option value="">選択</option></select></label>
+      <label>2着<select id="second"><option value="">選択</option></select></label>
+      <label>3着<select id="third"><option value="">選択</option></select></label>
+    </div>
+    <button class="primary" id="start">予想を確定してレースへ</button>
+    <p class="muted">※ この初期版では予想は端末内で管理されます。</p>
+  </section>
+
+  <section class="card hidden" id="race">
+    <h2>🏁 レーススタート！</h2>
+    <video id="raceVideo" controls playsinline></video>
+    <p class="muted" id="videoNote">運営者が動画を設定すると、ここで再生されます。</p>
+    <button class="primary" id="showResult">レース結果を確認する</button>
+  </section>
+
+  <section class="card hidden" id="result">
+    <h2>🏆 レース結果</h2>
+    <div id="actualOrder"></div>
+    <p id="winResult"></p>
+    <p id="trioResult"></p>
+    <p class="result" id="chipsResult"></p>
+    <p class="muted">この画面をスタッフに見せてください。</p>
+    <button class="secondary" onclick="location.reload()">画面を戻す</button>
+  </section>
+
+  <section class="card">
+    <h2>🔐 運営者設定（仮画面）</h2>
+    <p class="muted">これは初期版の設定用デモです。安全な管理者ログインではありません。公開サイトで本番利用する前に、サーバー認証を接続します。</p>
+    <button class="secondary" id="adminToggle">設定画面を開く</button>
+    <div id="admin" class="hidden">
+      <div class="admin-row">
+        <label>基本チップ数<input id="baseChips" type="number" min="0" value="50"></label>
+        <label>単勝ボーナス係数<input id="winFactor" type="number" min="0" step="0.5" value="5"></label>
+        <label>三連単ボーナス係数<input id="trioFactor" type="number" min="0" step="0.5" value="2"></label>
+      </div>
+      <h2>出走者名</h2>
+      <div id="nameInputs"></div>
+      <h2>レース動画URL</h2>
+      <p class="muted">動画は次の段階でオンライン保存に対応させます。ここでは動画の直接URLを登録する方式です。</p>
+      <div id="videoInputs"></div>
+      <button class="primary" id="saveSettings">この端末の設定を保存</button>
+    </div>
+  </section>
+</main>
+<footer>文化祭 人間競馬予想ゲーム</footer>
+<script>
+const defaultRunners = Array.from({length:6},(_,i)=>({
+ id:i+1,name:`出走者${i+1}`,photo:"",winOdds:[2,3,4,5,7,10][i]
+}));
+let runners=defaultRunners;
+let videos=[];
+let settings={base:50,winFactor:5,trioFactor:2};
+let picks={win:"",first:"",second:"",third:""};
+let started=false;
+
+const $=id=>document.getElementById(id);
+const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({
+ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+}[c]));
+function loadSettings(){
+ try{
+  const x=JSON.parse(localStorage.getItem("hr-demo-settings")||"null");
+  if(x){runners=x.runners||runners;videos=x.videos||[];settings=x.settings||settings;}
+ }catch(e){}
+}
+function saveLocal(){
+ localStorage.setItem("hr-demo-settings",JSON.stringify({runners,videos,settings}));
+}
+function renderRunners(){
+ $("runners").innerHTML=runners.map(r=>`
+ <div class="runner" data-id="${r.id}">
+  <img src="${escapeHTML(r.photo||"")}" alt="" onerror="this.style.visibility='hidden'">
+  <div><span class="number">${r.id}</span></div>
+  <strong>${escapeHTML(r.name)}</strong>
+  <div class="muted">単勝 ${r.winOdds}倍</div>
+ </div>`).join("");
+ for(const id of ["winPick","first","second","third"]){
+  const old=$(id).value;
+  $(id).innerHTML='<option value="">選択</option>'+runners.map(r=>
+   `<option value="${r.id}">${escapeHTML(r.name)}</option>`).join("");
+  $(id).value=old;
+ }
+}
+function renderAdmin(){
+ $("nameInputs").innerHTML=runners.map(r=>`
+  <label>${r.id}番 名前<input data-name="${r.id}" value="${escapeHTML(r.name)}"></label>
+  <label>${r.id}番 写真URL<input data-photo="${r.id}" value="${escapeHTML(r.photo)}" placeholder="画像URL（後でオンライン保存対応）"></label>
+  <label>${r.id}番 単勝オッズ<input data-odds="${r.id}" type="number" min="1" step="0.1" value="${r.winOdds}"></label>
+ `).join("");
+ $("videoInputs").innerHTML=Array.from({length:3},(_,i)=>`
+  <label>レース動画 ${i+1}<input data-video="${i}" value="${escapeHTML(videos[i]||"")}" placeholder="動画URL"></label>
+ `).join("");
+ $("baseChips").value=settings.base;
+ $("winFactor").value=settings.winFactor;
+ $("trioFactor").value=settings.trioFactor;
+}
+loadSettings();renderRunners();renderAdmin();
+
+$("runners").addEventListener("click",e=>{
+ const card=e.target.closest(".runner");if(!card)return;
+ const id=card.dataset.id;
+ $("winPick").value=id;
+ if(!$("first").value)$("first").value=id;
+ else if(!$("second").value&&$("first").value!==id)$("second").value=id;
+ else if(!$("third").value&&$("first").value!==id&&$("second").value!==id)$("third").value=id;
+});
+$("start").onclick=()=>{
+ const win=$("winPick").value,first=$("first").value,second=$("second").value,third=$("third").value;
+ if(!win||!first||!second||!third){alert("単勝と三連単の予想をすべて選んでね。");return;}
+ if(new Set([first,second,third]).size!==3){alert("三連単は別々の3人を選んでね。");return;}
+ picks={win,first,second,third};started=true;
+ $("prediction").classList.add("hidden");$("race").classList.remove("hidden");
+ if(videos.length){
+  const url=videos[Math.floor(Math.random()*videos.length)];
+  $("raceVideo").src=url;$("videoNote").textContent="動画を再生してください。";
+ }else{
+  $("videoNote").textContent="動画が未設定です。運営者が動画を登録してください。";
+ }
+ window.scrollTo(0,0);
+};
+$("showResult").onclick=()=>{
+ if(!started)return;
+ if(!videos.length){alert("動画と実際の着順が未設定のため、結果を判定できません。");return;}
+ const raw=prompt("動画の実際の着順を1〜6の番号で入力（例：2,1,4,3,5,6）");
+ if(!raw)return;
+ const order=raw.split(",").map(s=>s.trim());
+ if(order.length!==6||new Set(order).size!==6||order.some(n=>!runners.some(r=>String(r.id)===n))){
+  alert("1〜6番を重複なく、1着から6着の順に入力してね。");return;
+ }
+ const winHit=picks.win===order[0];
+ const trioHit=[picks.first,picks.second,picks.third].join(",")===order.slice(0,3).join(",");
+ const winner=runners.find(r=>String(r.id)===order[0]);
+ const winBonus=winHit?Math.floor(Number(winner.winOdds)*settings.winFactor):0;
+ const trioBonus=trioHit?Math.floor(settings.trioFactor):0;
+ $("actualOrder").innerHTML="<strong>着順</strong><ol>"+order.map(n=>`<li>${escapeHTML(runners.find(r=>String(r.id)===n).name)}</li>`).join("")+"</ol>";
+ $("winResult").textContent=`単勝：${winHit?"的中！":"はずれ"}（${winner.winOdds}倍）`;
+ $("trioResult").textContent=`三連単：${trioHit?"的中！":"はずれ"}`;
+ $("chipsResult").textContent=`基本 ${settings.base}枚 ＋ ボーナス ${winBonus+trioBonus}枚 ＝ 合計 ${settings.base+winBonus+trioBonus}枚`;
+ $("race").classList.add("hidden");$("result").classList.remove("hidden");window.scrollTo(0,0);
+};
+$("adminToggle").onclick=()=>{$("admin").classList.toggle("hidden");};
+$("saveSettings").onclick=()=>{
+ runners.forEach(r=>{
+  r.name=$(`[data-name="${r.id}"]`).value.trim()||`出走者${r.id}`;
+  r.photo=$(`[data-photo="${r.id}"]`).value.trim();
+  r.winOdds=Math.max(1,Number($(`[data-odds="${r.id}"]`).value)||1);
+ });
+ videos=Array.from(document.querySelectorAll("[data-video]")).map(e=>e.value.trim()).filter(Boolean);
+ settings={base:Math.max(0,Number($("baseChips").value)||0),
+ winFactor:Math.max(0,Number($("winFactor").value)||0),
+ trioFactor:Math.max(0,Number($("trioFactor").value)||0)};
+ saveLocal();renderRunners();renderAdmin();alert("この端末に設定を保存しました。");
+};
+</script>
+</body>
+</html>
